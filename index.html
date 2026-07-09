@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Ladders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EAE5D6;
+    --paper-dark:#DED7C2;
+    --paper-shadow:#c7bfa8;
+    --ink:#21262B;
+    --ink-soft:#565C63;
+    --rust:#A63A2C;
+    --teal:#2F5D56;
+    --brass:#9C7A3C;
+    --slate:#3E5C76;
+    --plum:#7A4869;
+    --moss:#4F6B52;
+    --indigo:#4A4E7C;
+    --line:#C9C0AA;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(0,0,0,0.02) 0, transparent 60%),
+      radial-gradient(circle at 85% 80%, rgba(0,0,0,0.025) 0, transparent 55%);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .app{max-width:900px;margin:0 auto;padding:0 20px 80px;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:28px 4px 18px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:34px;
+    gap:14px;flex-wrap:wrap;
+  }
+  .wordmark{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.5rem;
+    letter-spacing:-0.01em;
+  }
+  .wordmark span{color:var(--rust);font-style:italic;font-weight:500;}
+  .subtitle{
+    font-family:'Work Sans', sans-serif;
+    font-size:0.86rem;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .streak{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    background:var(--paper-dark);
+    border:1px solid var(--line);
+    padding:6px 12px;
+    border-radius:100px;
+    white-space:nowrap;
+  }
+
+  .disclaimer{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    line-height:1.55;
+    color:var(--ink-soft);
+    background:var(--paper-dark);
+    border:1px solid var(--line);
+    border-left:3px solid var(--brass);
+    border-radius:8px;
+    padding:12px 16px;
+    margin:0 4px 28px;
+  }
+
+  /* ---------- hero / ladder stepper ---------- */
+  .hero{margin-bottom:56px;}
+  .ladder-frame{
+    max-width:600px;
+    margin:0 auto;
+    background:var(--paper-dark);
+    border:1px solid var(--paper-shadow);
+    border-radius:var(--radius);
+    box-shadow:0 2px 0 var(--paper-shadow), 0 18px 40px -18px rgba(33,38,43,0.35);
+    padding:40px 34px 30px;
+    min-height:340px;
+    display:flex;flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+  .front-tag{
+    align-self:flex-start;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.68rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:5px 10px;
+    border:1px dashed var(--ink-soft);
+    border-radius:4px;
+    color:var(--ink-soft);
+    transform:rotate(-2deg);
+    margin-bottom:8px;
+  }
+  .tier-stage{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:150px;
+    padding:10px 0 4px;
+  }
+  .tier-word{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    line-height:1.1;
+    color:var(--ink);
+    transition:font-size 0.35s cubic-bezier(.4,.2,.2,1), color 0.35s ease, font-weight 0.2s ease;
+    word-break:break-word;
+  }
+  .tw-0{font-size:clamp(1.6rem, 5vw, 2rem); font-weight:500; color:var(--ink-soft);}
+  .tw-1{font-size:clamp(1.9rem, 6vw, 2.4rem); font-weight:500; color:var(--ink);}
+  .tw-2{font-size:clamp(2.2rem, 7vw, 2.9rem); font-weight:600; color:var(--tier-c, var(--ink));}
+  .tw-3{font-size:clamp(2.6rem, 8.5vw, 3.5rem); font-weight:700; color:var(--tier-c, var(--ink));}
+  .tier-note{
+    margin-top:16px;
+    font-size:0.92rem;
+    line-height:1.5;
+    color:var(--ink-soft);
+    max-width:440px;
+  }
+
+  .tier-nav{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:14px;width:100%;margin-top:26px;
+  }
+  .nav-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.8rem;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:12px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+    white-space:nowrap;
+  }
+  .nav-btn:hover:not(:disabled){background:var(--rust);transform:translateY(-1px);}
+  .nav-btn:disabled{opacity:0.35;cursor:default;}
+  .nav-btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px;}
+  .nav-btn.next{background:var(--tier-c, var(--rust));}
+  .nav-btn.next:hover:not(:disabled){background:var(--ink);}
+
+  .tier-dots{display:flex;gap:7px;align-items:center;}
+  .tier-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--paper-shadow);
+    transition:background 0.2s ease, transform 0.2s ease;
+  }
+  .tier-dot.active{background:var(--tier-c, var(--rust));transform:scale(1.3);}
+  .tier-dot.passed{background:var(--ink-soft);}
+
+  .hero-meta{
+    display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;
+    margin-top:20px;
+  }
+  #dateLabel{font-family:'JetBrains Mono', monospace;font-size:0.78rem;color:var(--ink-soft);}
+  .fav-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.78rem;
+    background:none;
+    border:1px solid var(--line);
+    padding:7px 14px;
+    border-radius:100px;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .fav-btn.active{border-color:var(--brass);color:var(--brass);background:rgba(156,122,60,0.1);}
+
+  /* ---------- library ---------- */
+  .library-head{
+    display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:14px;
+    margin-bottom:20px;
+  }
+  .library-head h2{
+    font-family:'Fraunces', serif;font-weight:600;font-size:1.4rem;margin:0;
+  }
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;}
+  .tab{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    padding:6px 12px;
+    border-radius:100px;
+    border:1px solid var(--line);
+    background:transparent;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .tab.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  .search-input{
+    width:100%;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.85rem;
+    padding:12px 16px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--paper);
+    color:var(--ink);
+    margin-bottom:18px;
+  }
+  .search-input::placeholder{color:var(--ink-soft);}
+  .search-input:focus-visible{outline:2px solid var(--brass);outline-offset:1px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px,1fr));
+    gap:14px;
+  }
+  .mini-card{
+    background:var(--paper-dark);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 16px 14px;
+    cursor:pointer;
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+    display:flex;flex-direction:column;gap:10px;
+    min-height:130px;
+  }
+  .mini-card:hover{transform:translateY(-2px);box-shadow:0 10px 20px -12px rgba(33,38,43,0.35);}
+  .mini-tag{
+    align-self:flex-start;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.62rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    padding:3px 8px;
+    border-radius:100px;
+    color:#fff;
+  }
+  .mini-climb{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:1.02rem;
+    line-height:1.35;
+    flex:1;
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .mini-climb .mc-base{color:var(--ink-soft);font-size:0.92rem;}
+  .mini-climb .mc-arrow{font-family:'JetBrains Mono', monospace;font-style:normal;font-size:0.68rem;color:var(--ink-soft);margin:1px 0;}
+  .mini-climb .mc-top{font-weight:600;color:var(--ink);}
+  .mini-foot{display:flex;justify-content:space-between;align-items:center;}
+  .mini-star{font-size:0.85rem;color:var(--brass);}
+  .seen-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);}
+
+  /* ---------- modal ---------- */
+  .modal-overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(33,38,43,0.55);
+    align-items:center;justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--paper-dark);
+    border:1px solid var(--paper-shadow);
+    border-radius:var(--radius);
+    max-width:560px;width:100%;
+    max-height:85vh;overflow-y:auto;
+    padding:32px 30px 26px;
+    position:relative;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
+  }
+  .modal-close{
+    position:absolute;top:16px;right:16px;
+    background:none;border:none;font-size:1.1rem;
+    cursor:pointer;color:var(--ink-soft);
+  }
+  .modal-close:hover{color:var(--ink);}
+  .modal-chain{display:flex;flex-direction:column;gap:0;}
+  .chain-step{
+    padding:14px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .chain-step:last-child{border-bottom:none;}
+  .chain-word{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:600;
+  }
+  .chain-note{
+    font-size:0.86rem;
+    line-height:1.4;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+  .chain-arrow{
+    text-align:center;
+    color:var(--ink-soft);
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.75rem;
+    padding:2px 0;
+  }
+
+  @media (max-width: 560px){
+    .app{padding:0 14px 60px;}
+    .ladder-frame{padding:30px 20px 22px;}
+    .nav-btn{padding:10px 12px;font-size:0.74rem;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div>
+      <div class="wordmark">Word <span>Ladders</span></div>
+      <div class="subtitle">climb toward a stronger word, one step at a time</div>
+    </div>
+    <div class="streak" id="streakDisplay">🪜 0 day streak</div>
+  </header>
+
+  <div class="disclaimer">
+    Synonyms aren't perfectly interchangeable — each step up shifts the register or intensity a little, not just the strength. Treat this as a feel for the climb, not a strict thesaurus swap.
+  </div>
+
+  <section class="hero">
+    <div class="ladder-frame">
+      <div class="front-tag" id="frontTag">CATEGORY</div>
+      <div class="tier-stage">
+        <div class="tier-word tw-0" id="tierWord">Loading…</div>
+        <div class="tier-note" id="tierNote"></div>
+      </div>
+      <div class="tier-nav">
+        <button class="nav-btn prev" id="prevBtn">← Simpler</button>
+        <div class="tier-dots" id="tierDots"></div>
+        <button class="nav-btn next" id="nextBtn">Stronger →</button>
+      </div>
+    </div>
+    <div class="hero-meta">
+      <span id="dateLabel"></span>
+      <button class="fav-btn" id="favBtn">☆ Save this one</button>
+      <button class="fav-btn" id="anotherBtn">🔀 Show me another</button>
+    </div>
+  </section>
+
+  <section class="library">
+    <div class="library-head">
+      <h2>The Ladder Rack</h2>
+      <div class="tabs" id="tabs"></div>
+    </div>
+    <input type="search" id="searchInput" class="search-input" placeholder="Search a word, a synonym, a category…" autocomplete="off">
+    <div class="grid" id="grid"></div>
+  </section>
+
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card" id="modalCard"></div>
+</div>
+
+<script>
+// Each entry: a category + a chain of words that escalate in intensity/strength,
+// from the plain everyday word up to the most intense/precise version.
+// No fixed "Good/Better/Best/Amazing" labels — just the climb itself.
+const DATA = [
+  {id:1, cat:"Emotions", tiers:[
+    {word:"happy", note:"the plain, all-purpose word — always safe, never wrong."},
+    {word:"pleased", note:"a touch more composed, often about a specific outcome going your way."},
+    {word:"delighted", note:"warmer and more animated — genuine enthusiasm shows through."},
+    {word:"elated", note:"intense, can't-contain-it joy — save it for the big moments."}
+  ]},
+  {id:2, cat:"Emotions", tiers:[
+    {word:"sad", note:"simple and direct — works in almost any sentence."},
+    {word:"unhappy", note:"slightly more formal, often about a situation rather than a single moment."},
+    {word:"heartbroken", note:"implies real emotional weight, usually tied to loss or rejection."},
+    {word:"devastated", note:"total emotional collapse — reserved for genuinely serious news."}
+  ]},
+  {id:3, cat:"Emotions", tiers:[
+    {word:"angry", note:"clear and neutral — the default word for the feeling."},
+    {word:"annoyed", note:"actually a step down in intensity — mild irritation, not rage."},
+    {word:"furious", note:"visibly, forcefully angry — the kind of anger people notice."},
+    {word:"enraged", note:"nearly out of control — the top of the scale."}
+  ]},
+  {id:4, cat:"Emotions", tiers:[
+    {word:"scared", note:"everyday word for fear, casual and common."},
+    {word:"nervous", note:"lower-key — anticipatory unease rather than acute fear."},
+    {word:"terrified", note:"full-blown fear, often physical (shaking, frozen) in feel."},
+    {word:"petrified", note:"literally frozen with fear — the most extreme version."}
+  ]},
+  {id:5, cat:"Emotions", tiers:[
+    {word:"surprised", note:"neutral, works for anything unexpected, good or bad."},
+    {word:"startled", note:"a physical jolt — usually sudden and momentary."},
+    {word:"astonished", note:"a bigger, more lasting shock, often at something impressive."},
+    {word:"flabbergasted", note:"so shocked you're momentarily speechless — a bit playful too."}
+  ]},
+  {id:6, cat:"Emotions", tiers:[
+    {word:"tired", note:"the everyday word, covers everything from sleepy to worn out."},
+    {word:"weary", note:"more literary — tiredness that's built up over time."},
+    {word:"exhausted", note:"physically or mentally spent — stronger and more urgent."},
+    {word:"drained", note:"nothing left to give — often used for emotional depletion too."}
+  ]},
+  {id:7, cat:"Emotions", tiers:[
+    {word:"excited", note:"simple, upbeat, works for kids and adults alike."},
+    {word:"eager", note:"forward-looking — excitement about something about to happen."},
+    {word:"thrilled", note:"a genuine rush of excitement, often said with real energy."},
+    {word:"exhilarated", note:"an almost physical high — adrenaline-level excitement."}
+  ]},
+  {id:8, cat:"Emotions", tiers:[
+    {word:"worried", note:"common, mild, and general — a little unsettled."},
+    {word:"concerned", note:"more formal and outward-facing — often about someone else."},
+    {word:"anxious", note:"a more persistent, gnawing unease, often physical."},
+    {word:"distraught", note:"overwhelmed by worry — barely holding it together."}
+  ]},
+  {id:9, cat:"Size & Force", tiers:[
+    {word:"big", note:"casual, all-purpose — the word kids learn first."},
+    {word:"large", note:"slightly more formal, common on menus and measurements."},
+    {word:"huge", note:"emphatic — bigger than expected, said with more feeling."},
+    {word:"colossal", note:"almost mythic in scale — reserved for the truly massive."}
+  ]},
+  {id:10, cat:"Size & Force", tiers:[
+    {word:"small", note:"neutral, works for almost anything."},
+    {word:"little", note:"softer, often affectionate rather than purely about size."},
+    {word:"tiny", note:"emphasizes just how small — more vivid, a bit more childlike."},
+    {word:"minuscule", note:"barely perceptible — a precise, almost scientific extreme."}
+  ]},
+  {id:11, cat:"Size & Force", tiers:[
+    {word:"strong", note:"the default word for physical or figurative strength."},
+    {word:"powerful", note:"broader — can describe force, influence, or impact."},
+    {word:"mighty", note:"a bit grand or old-fashioned, often used for effect."},
+    {word:"unstoppable", note:"strength framed as unbeatable momentum, not just raw force."}
+  ]},
+  {id:12, cat:"Size & Force", tiers:[
+    {word:"heavy", note:"plain and physical — works for objects or moods."},
+    {word:"weighty", note:"slightly more formal, often used figuratively (a weighty decision)."},
+    {word:"hefty", note:"casual and vivid — implies bulk as much as weight."},
+    {word:"massive", note:"emphasizes overwhelming size and weight together."}
+  ]},
+  {id:13, cat:"Size & Force", tiers:[
+    {word:"wide", note:"simple, spatial, and literal."},
+    {word:"broad", note:"slightly more formal, common in figurative use (broad appeal)."},
+    {word:"expansive", note:"emphasizes generous, open scale — often used for views or ideas."},
+    {word:"vast", note:"scale that's hard to fully take in — the top of the range."}
+  ]},
+  {id:14, cat:"Size & Force", tiers:[
+    {word:"weak", note:"neutral and direct, applies to people, arguments, or objects."},
+    {word:"feeble", note:"a bit more literary — implies frailty as much as lack of strength."},
+    {word:"frail", note:"usually about physical fragility, often tied to age or illness."},
+    {word:"powerless", note:"total lack of ability to act — the extreme end of weak."}
+  ]},
+  {id:15, cat:"Speed & Effort", tiers:[
+    {word:"fast", note:"the default, works in casual speech and writing alike."},
+    {word:"quick", note:"slightly softer, often about brief duration as much as speed."},
+    {word:"speedy", note:"a bit more playful — common in casual or service contexts."},
+    {word:"lightning-fast", note:"vivid and emphatic — speed treated as almost unbelievable."}
+  ]},
+  {id:16, cat:"Speed & Effort", tiers:[
+    {word:"slow", note:"neutral and factual, no real judgment attached."},
+    {word:"sluggish", note:"implies a lack of energy behind the slowness, not just pace."},
+    {word:"plodding", note:"heavy, effortful slowness — often a little critical."},
+    {word:"glacial", note:"exaggerated for effect — painfully, almost comically slow."}
+  ]},
+  {id:17, cat:"Speed & Effort", tiers:[
+    {word:"hardworking", note:"straightforward praise, common in everyday conversation."},
+    {word:"diligent", note:"more formal — emphasizes care and consistency, not just effort."},
+    {word:"industrious", note:"a bit old-fashioned, evokes steady, productive effort over time."},
+    {word:"tireless", note:"effort that seemingly never runs out — the highest praise."}
+  ]},
+  {id:18, cat:"Speed & Effort", tiers:[
+    {word:"lazy", note:"blunt and common — carries mild judgment."},
+    {word:"idle", note:"more neutral, can describe temporary inactivity, not just character."},
+    {word:"slothful", note:"more literary and more critical — laziness as a trait."},
+    {word:"indolent", note:"formal and pointed — habitual, almost chosen avoidance of effort."}
+  ]},
+  {id:19, cat:"Speed & Effort", tiers:[
+    {word:"easy", note:"the everyday word for low difficulty."},
+    {word:"simple", note:"emphasizes lack of complexity more than lack of effort."},
+    {word:"effortless", note:"implies it looked easy even if it wasn't, often about skill."},
+    {word:"trivial", note:"so easy it barely counts as a task — can sound dismissive."}
+  ]},
+  {id:20, cat:"Speed & Effort", tiers:[
+    {word:"difficult", note:"neutral and common, works in almost any context."},
+    {word:"challenging", note:"softer and more positive — frames difficulty as worth attempting."},
+    {word:"grueling", note:"emphasizes exhausting, sustained effort, physical or mental."},
+    {word:"herculean", note:"mythic-scale difficulty — reserved for truly epic tasks."}
+  ]},
+  {id:21, cat:"Smarts & Skill", tiers:[
+    {word:"smart", note:"casual, common, works for people of any age."},
+    {word:"clever", note:"emphasizes quick wit or resourcefulness, not just knowledge."},
+    {word:"brilliant", note:"exceptional intelligence, often paired with real achievement."},
+    {word:"genius", note:"rare-tier intellect — used sparingly, as a noun or adjective."}
+  ]},
+  {id:22, cat:"Smarts & Skill", tiers:[
+    {word:"foolish", note:"mild, common criticism of a decision or action."},
+    {word:"silly", note:"softer and often affectionate rather than harsh."},
+    {word:"absurd", note:"emphasizes how illogical or ridiculous something is."},
+    {word:"ludicrous", note:"so extreme it's almost funny — top-tier disbelief."}
+  ]},
+  {id:23, cat:"Smarts & Skill", tiers:[
+    {word:"skilled", note:"plain, solid praise for competence."},
+    {word:"talented", note:"suggests natural ability, not just practiced skill."},
+    {word:"masterful", note:"implies real command and confidence over a craft."},
+    {word:"virtuosic", note:"used for jaw-dropping technical skill, often in art or music."}
+  ]},
+  {id:24, cat:"Smarts & Skill", tiers:[
+    {word:"creative", note:"broad, everyday praise for original thinking."},
+    {word:"imaginative", note:"emphasizes vivid, inventive ideas over practical output."},
+    {word:"inventive", note:"ties creativity to problem-solving and novel solutions."},
+    {word:"visionary", note:"ideas so original they reshape how others think — high praise."}
+  ]},
+  {id:25, cat:"Smarts & Skill", tiers:[
+    {word:"confused", note:"everyday word, works for small or large mix-ups."},
+    {word:"puzzled", note:"a touch more thoughtful — genuinely trying to work something out."},
+    {word:"baffled", note:"stronger — a problem that seems to resist any explanation."},
+    {word:"bewildered", note:"disoriented confusion, often with a hint of being overwhelmed."}
+  ]},
+  {id:26, cat:"Looks & Impression", tiers:[
+    {word:"beautiful", note:"the classic, all-purpose word for appeal."},
+    {word:"attractive", note:"slightly more understated, often used in neutral contexts too."},
+    {word:"gorgeous", note:"more enthusiastic and casual — stronger admiration."},
+    {word:"breathtaking", note:"beauty strong enough to stop you in your tracks."}
+  ]},
+  {id:27, cat:"Looks & Impression", tiers:[
+    {word:"ugly", note:"blunt, common, and a bit harsh."},
+    {word:"unattractive", note:"more neutral and formal — softer criticism."},
+    {word:"hideous", note:"emphatic and visceral — a strong negative reaction."},
+    {word:"grotesque", note:"disturbing, almost unnatural — the far end of the scale."}
+  ]},
+  {id:28, cat:"Looks & Impression", tiers:[
+    {word:"impressive", note:"solid, common praise for something well done."},
+    {word:"remarkable", note:"emphasizes how noteworthy or unusual something is."},
+    {word:"extraordinary", note:"beyond the ordinary — reserved for genuinely rare quality."},
+    {word:"astounding", note:"provokes real disbelief — the top of the scale."}
+  ]},
+  {id:29, cat:"Looks & Impression", tiers:[
+    {word:"boring", note:"casual, direct, and very common."},
+    {word:"dull", note:"slightly more formal, can describe people, places, or things."},
+    {word:"tedious", note:"emphasizes drawn-out effort or time, not just lack of interest."},
+    {word:"mind-numbing", note:"exaggerated for effect — so tedious it feels painful."}
+  ]},
+  {id:30, cat:"Looks & Impression", tiers:[
+    {word:"interesting", note:"safe, common, works almost anywhere."},
+    {word:"fascinating", note:"stronger — genuine curiosity or intrigue, not just mild interest."},
+    {word:"captivating", note:"implies being fully drawn in, almost unable to look away."},
+    {word:"mesmerizing", note:"an almost hypnotic pull — the strongest version."}
+  ]},
+  {id:31, cat:"Looks & Impression", tiers:[
+    {word:"messy", note:"everyday, casual word for disorder."},
+    {word:"disheveled", note:"more specific to appearance — rumpled, unkempt."},
+    {word:"chaotic", note:"broader — implies disorder with real unpredictability."},
+    {word:"disastrous", note:"disorder framed as an outright failure, not just untidiness."}
+  ]},
+  {id:32, cat:"Sound & Temperature", tiers:[
+    {word:"loud", note:"plain and common, works for any volume above normal."},
+    {word:"noisy", note:"emphasizes unpleasant or chaotic sound, not just volume."},
+    {word:"deafening", note:"volume strong enough to physically overwhelm."},
+    {word:"earsplitting", note:"vivid, almost painful — the top of the scale."}
+  ]},
+  {id:33, cat:"Sound & Temperature", tiers:[
+    {word:"quiet", note:"the everyday word, mild and neutral."},
+    {word:"hushed", note:"implies a deliberate, gentle lowering of sound."},
+    {word:"silent", note:"absolute absence of sound, more formal and complete."},
+    {word:"soundless", note:"poetic and emphatic — silence noted as striking, not just present."}
+  ]},
+  {id:34, cat:"Sound & Temperature", tiers:[
+    {word:"hot", note:"casual and universal, covers weather, food, and more."},
+    {word:"sweltering", note:"specifically about oppressive, uncomfortable heat."},
+    {word:"scorching", note:"vivid and intense — heat strong enough to feel damaging."},
+    {word:"blistering", note:"extreme heat, often used for both weather and criticism."}
+  ]},
+  {id:35, cat:"Sound & Temperature", tiers:[
+    {word:"cold", note:"plain, everyday word for low temperature."},
+    {word:"chilly", note:"softer and more casual — mildly, tolerably cold."},
+    {word:"freezing", note:"emphatic — cold enough to genuinely bother you."},
+    {word:"frigid", note:"formal and extreme — used for the harshest cold."}
+  ]},
+  {id:36, cat:"Sound & Temperature", tiers:[
+    {word:"bright", note:"the everyday word for strong light."},
+    {word:"radiant", note:"implies light seeming to glow outward, often used warmly."},
+    {word:"dazzling", note:"light strong enough to be a little overwhelming."},
+    {word:"blinding", note:"light so intense it's genuinely hard to look at."}
+  ]},
+  {id:37, cat:"Sound & Temperature", tiers:[
+    {word:"dark", note:"neutral, common, works almost anywhere."},
+    {word:"dim", note:"softer — partial darkness, not total absence of light."},
+    {word:"gloomy", note:"adds a mood — dim and a little unsettling or sad."},
+    {word:"pitch-black", note:"total, complete darkness — the extreme end."}
+  ]},
+  {id:38, cat:"Actions", tiers:[
+    {word:"said", note:"the default reporting verb — neutral in almost every context."},
+    {word:"stated", note:"more formal, common in written or official contexts."},
+    {word:"declared", note:"implies confidence and public weight behind the words."},
+    {word:"proclaimed", note:"formal, almost ceremonial — announced with real authority."}
+  ]},
+  {id:39, cat:"Actions", tiers:[
+    {word:"walked", note:"plain and neutral, the default word for the action."},
+    {word:"strolled", note:"implies a relaxed, unhurried pace."},
+    {word:"strode", note:"confident, purposeful, often longer steps."},
+    {word:"marched", note:"deliberate, forceful movement, often with clear intent."}
+  ]},
+  {id:40, cat:"Actions", tiers:[
+    {word:"looked", note:"neutral, works for almost any glance or gaze."},
+    {word:"glanced", note:"implies a brief, quick look."},
+    {word:"stared", note:"a fixed, prolonged look, often intense or unblinking."},
+    {word:"gawked", note:"open, unashamed staring — often a little rude or comic."}
+  ]},
+  {id:41, cat:"Actions", tiers:[
+    {word:"ate", note:"plain and universal, works in any context."},
+    {word:"devoured", note:"emphasizes speed and enthusiasm, often figurative too."},
+    {word:"gobbled", note:"casual and vivid — fast, eager, a little messy."},
+    {word:"wolfed down", note:"very informal — eating fast, almost without pausing."}
+  ]},
+  {id:42, cat:"Actions", tiers:[
+    {word:"laughed", note:"neutral, the default word for the reaction."},
+    {word:"chuckled", note:"a quieter, more restrained kind of laugh."},
+    {word:"guffawed", note:"a loud, unrestrained burst of laughter."},
+    {word:"roared with laughter", note:"uncontrollable, full-body laughter — the top of the scale."}
+  ]},
+  {id:43, cat:"Actions", tiers:[
+    {word:"cried", note:"plain and common, covers everything from tears to sobs."},
+    {word:"wept", note:"more literary — quieter, often more restrained sadness."},
+    {word:"sobbed", note:"visible, audible crying, often with heaving breaths."},
+    {word:"bawled", note:"loud, uninhibited crying, often used casually too."}
+  ]},
+  {id:44, cat:"Actions", tiers:[
+    {word:"ran", note:"neutral and universal — the default word for the action."},
+    {word:"jogged", note:"implies a steady, moderate, sustainable pace."},
+    {word:"sprinted", note:"fast, intense, usually short bursts of effort."},
+    {word:"bolted", note:"sudden, urgent, often triggered by shock or fear."}
+  ]}
+];
+
+const CAT_COLORS = {
+  "Emotions": "var(--rust)",
+  "Size & Force": "var(--teal)",
+  "Speed & Effort": "var(--brass)",
+  "Smarts & Skill": "var(--slate)",
+  "Looks & Impression": "var(--plum)",
+  "Sound & Temperature": "var(--moss)",
+  "Actions": "var(--indigo)"
+};
+
+function dayOfYear(d){
+  const start = new Date(d.getFullYear(),0,0);
+  const diff = d - start;
+  return Math.floor(diff / 86400000);
+}
+function todayKey(d){
+  return d.toISOString().slice(0,10);
+}
+
+let progress = { favorites: [], seen: [], streak: 0, lastDate: null };
+let progressLoadedOk = false;
+
+async function loadProgress(){
+  try{
+    const res = await window.storage.get('progress');
+    if(res && typeof res.value === 'string'){
+      const parsed = JSON.parse(res.value);
+      progress = Object.assign({ favorites: [], seen: [], streak: 0, lastDate: null }, parsed);
+    }
+    progressLoadedOk = true;
+  }catch(e){
+    console.log('No existing progress found (or load failed) — starting fresh.', e);
+    progressLoadedOk = true;
+  }
+}
+
+async function saveProgress(){
+  if(!progressLoadedOk){
+    console.warn('Skipped save: progress was never successfully loaded this session.');
+    return;
+  }
+  try{
+    await window.storage.set('progress', JSON.stringify(progress));
+  }catch(e){ console.error('save failed', e); }
+}
+
+function updateStreak(){
+  const now = new Date();
+  const key = todayKey(now);
+  if(progress.lastDate === key) return false;
+  if(progress.lastDate){
+    const prev = new Date(progress.lastDate);
+    const diffDays = Math.round((now - prev) / 86400000);
+    progress.streak = diffDays === 1 ? progress.streak + 1 : 1;
+  } else {
+    progress.streak = 1;
+  }
+  progress.lastDate = key;
+  return true;
+}
+
+let currentDaily = null;
+let currentTierIndex = 0;
+let activeTab = "All";
+let searchQuery = "";
+
+function renderStreak(){
+  document.getElementById('streakDisplay').textContent = `🪜 ${progress.streak} day streak`;
+}
+
+function renderTierDots(entry){
+  const wrap = document.getElementById('tierDots');
+  wrap.innerHTML = '';
+  entry.tiers.forEach((t, i) => {
+    const dot = document.createElement('span');
+    dot.className = 'tier-dot';
+    if(i === currentTierIndex) dot.classList.add('active');
+    else if(i < currentTierIndex) dot.classList.add('passed');
+    wrap.appendChild(dot);
+  });
+}
+
+function renderTier(){
+  const entry = currentDaily;
+  const tier = entry.tiers[currentTierIndex];
+  const color = CAT_COLORS[entry.cat];
+
+  const wordEl = document.getElementById('tierWord');
+  wordEl.className = `tier-word tw-${currentTierIndex}`;
+  wordEl.style.setProperty('--tier-c', color);
+  wordEl.textContent = tier.word;
+
+  document.getElementById('tierNote').textContent = tier.note;
+
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  prevBtn.disabled = currentTierIndex === 0;
+  nextBtn.disabled = currentTierIndex === entry.tiers.length - 1;
+  nextBtn.style.setProperty('--tier-c', color);
+
+  renderTierDots(entry);
+}
+
+function showEntry(entry, dateText){
+  currentDaily = entry;
+  currentTierIndex = 0;
+  let seenChanged = false;
+  if(!progress.seen.includes(entry.id)){
+    progress.seen.push(entry.id);
+    seenChanged = true;
+  }
+
+  document.getElementById('frontTag').textContent = entry.cat.toUpperCase();
+  document.getElementById('dateLabel').textContent = dateText;
+  renderTier();
+  updateFavBtn();
+  renderGrid();
+  return seenChanged;
+}
+
+function renderDaily(){
+  const now = new Date();
+  const idx = dayOfYear(now) % DATA.length;
+  const dateText = now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+  return showEntry(DATA[idx], dateText);
+}
+
+async function pickAnother(){
+  const candidates = DATA.filter(d => d.id !== currentDaily.id);
+  const unseen = candidates.filter(d => !progress.seen.includes(d.id));
+  const pool = unseen.length > 0 ? unseen : candidates;
+  const choice = pool[Math.floor(Math.random() * pool.length)];
+  showEntry(choice, "another one from the rack");
+  await saveProgress();
+}
+
+function updateFavBtn(){
+  const btn = document.getElementById('favBtn');
+  const isFav = progress.favorites.includes(currentDaily.id);
+  btn.textContent = isFav ? '★ Saved' : '☆ Save this one';
+  btn.classList.toggle('active', isFav);
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if(currentTierIndex > 0){ currentTierIndex--; renderTier(); }
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if(currentTierIndex < currentDaily.tiers.length - 1){ currentTierIndex++; renderTier(); }
+});
+document.getElementById('favBtn').addEventListener('click', async () => {
+  const i = progress.favorites.indexOf(currentDaily.id);
+  if(i === -1) progress.favorites.push(currentDaily.id);
+  else progress.favorites.splice(i,1);
+  updateFavBtn();
+  await saveProgress();
+  renderGrid();
+});
+document.getElementById('anotherBtn').addEventListener('click', () => {
+  pickAnother();
+});
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  if(searchQuery && activeTab !== "All" && activeTab !== "Saved"){
+    activeTab = "All";
+    renderTabs();
+  }
+  renderGrid();
+});
+
+const CATEGORIES = ["All", "Emotions", "Size & Force", "Speed & Effort", "Smarts & Skill", "Looks & Impression", "Sound & Temperature", "Actions", "Saved"];
+
+function renderTabs(){
+  const wrap = document.getElementById('tabs');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (cat === activeTab ? ' active' : '');
+    btn.textContent = cat;
+    btn.addEventListener('click', () => { activeTab = cat; renderTabs(); renderGrid(); });
+    wrap.appendChild(btn);
+  });
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  let items = DATA;
+  if(activeTab === "Saved"){
+    items = DATA.filter(d => progress.favorites.includes(d.id));
+  } else if(activeTab !== "All"){
+    items = DATA.filter(d => d.cat === activeTab);
+  }
+  if(searchQuery){
+    items = items.filter(d => {
+      const words = d.tiers.map(t => t.word.toLowerCase()).join(' ');
+      const notes = d.tiers.map(t => t.note.toLowerCase()).join(' ');
+      return words.includes(searchQuery)
+        || notes.includes(searchQuery)
+        || d.cat.toLowerCase().includes(searchQuery);
+    });
+  }
+  if(items.length === 0){
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-family:JetBrains Mono, monospace;color:var(--ink-soft);font-size:0.85rem;padding:20px 0;';
+    empty.textContent = searchQuery
+      ? `Nothing matches "${searchQuery}" yet — the rack's still growing.`
+      : (activeTab === "Saved" ? "Nothing saved yet — tap the star on any ladder." : "Nothing here yet.");
+    grid.appendChild(empty);
+    return;
+  }
+  items.forEach(d => {
+    const base = d.tiers[0].word;
+    const top = d.tiers[d.tiers.length - 1].word;
+    const card = document.createElement('div');
+    card.className = 'mini-card';
+    card.innerHTML = `
+      <span class="mini-tag" style="background:${CAT_COLORS[d.cat]}">${d.cat}</span>
+      <div class="mini-climb">
+        <span class="mc-base">${base}</span>
+        <span class="mc-arrow">↑ climbs to</span>
+        <span class="mc-top">${top}</span>
+      </div>
+      <div class="mini-foot">
+        <span class="mini-star">${progress.favorites.includes(d.id) ? '★' : ''}</span>
+        ${progress.seen.includes(d.id) ? '<span class="seen-dot" title="climbed"></span>' : ''}
+      </div>
+    `;
+    card.addEventListener('click', () => openModal(d));
+    grid.appendChild(card);
+  });
+}
+
+function openModal(d){
+  if(!progress.seen.includes(d.id)){
+    progress.seen.push(d.id);
+    saveProgress();
+  }
+  const modal = document.getElementById('modalCard');
+  const isFav = progress.favorites.includes(d.id);
+  const chainHTML = d.tiers.map((t, i) => `
+    <div class="chain-step">
+      <div class="chain-word" style="font-size:${1.05 + i*0.22}rem;color:${i >= 2 ? CAT_COLORS[d.cat] : 'var(--ink)'}">${t.word}</div>
+      <div class="chain-note">${t.note}</div>
+    </div>
+    ${i < d.tiers.length - 1 ? '<div class="chain-arrow">↓</div>' : ''}
+  `).join('');
+  modal.innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <span class="mini-tag" style="background:${CAT_COLORS[d.cat]};margin-bottom:16px;display:inline-block;">${d.cat}</span>
+    <div class="modal-chain">${chainHTML}</div>
+    <button class="fav-btn ${isFav ? 'active' : ''}" id="modalFavBtn" style="margin-top:16px;">${isFav ? '★ Saved' : '☆ Save this one'}</button>
+  `;
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('modalFavBtn').addEventListener('click', async () => {
+    const i = progress.favorites.indexOf(d.id);
+    if(i === -1) progress.favorites.push(d.id); else progress.favorites.splice(i,1);
+    await saveProgress();
+    openModal(d);
+    renderGrid();
+    if(currentDaily && currentDaily.id === d.id) updateFavBtn();
+  });
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'modalOverlay') closeModal();
+});
+
+async function init(){
+  await loadProgress();
+  const streakChanged = updateStreak();
+  renderStreak();
+  const seenChanged = renderDaily();
+  renderTabs();
+  renderGrid();
+  if(streakChanged || seenChanged) await saveProgress();
+}
+init();
+</script>
+</body>
+</html>
